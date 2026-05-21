@@ -433,3 +433,7 @@ FodyWeavers.xsd
 
 # JetBrains Rider / IntelliJ IDE settings
 .idea/
+
+# Synthetix design docs — kept local until the source code is generated and tested.
+# Remove this entry to publish the design document.
+/docs/
