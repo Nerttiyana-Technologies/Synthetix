@@ -29,7 +29,8 @@
   <!-- ===== NuGet package settings (design doc section 10.3) ===== -->
   <PropertyGroup>
     <PackageId>Synthetix</PackageId>
-    <Version>0.1.0</Version>
+    <!-- The version is set once in Directory.Build.props (<VersionPrefix>) so the
+         Release workflow's tag check and the package can never disagree. -->
     <Title>Synthetix</Title>
     <Description>A compile-time, source-generated object-to-object mapper for .NET. As fast as hand-written code, AOT friendly, with an auditable, drift-checked mapping manifest.</Description>
     <PackageTags>source-generator;mapper;mapping;object-mapper;aot;roslyn;dto</PackageTags>
