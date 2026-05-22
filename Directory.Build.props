@@ -22,6 +22,12 @@
 
   <!-- Shared package metadata. Only the packable projects actually produce a NuGet package. -->
   <PropertyGroup>
+    <!-- The single source of truth for the package version. The Release workflow
+         (.github/workflows/release.yml) reads this value and checks that the
+         pushed git tag matches it - so bump this in the same commit you tag.
+         Example: set 0.2.0 here, then push tag v0.2.0. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+
     <Authors>Suresh Subramanian</Authors>
     <Company>Synthetix</Company>
     <Product>Synthetix</Product>
