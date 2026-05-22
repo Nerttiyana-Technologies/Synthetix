@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The performance suite. Run it in Release configuration; see
+       benchmarks/RESULTS.md for the exact command line. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+
+    <!-- The two competitors the benchmarks compare Synthetix against.
+         Mapperly is also a source generator; AutoMapper is reflection /
+         expression-tree based. If a version fails to restore, bump it - these
+         packages affect only the benchmark project, not the library or tests.
+         AutoMapper 16.x requires an ILoggerFactory when building a
+         MapperConfiguration; Microsoft.Extensions.Logging.Abstractions
+         (NullLoggerFactory) comes in transitively with it. -->
+    <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
+    <PackageReference Include="AutoMapper" Version="16.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The generator builds the Synthetix mappers used in the benchmarks. -->
+    <ProjectReference Include="..\..\src\Synthetix.Generator\Synthetix.Generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

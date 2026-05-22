@@ -1,0 +1,209 @@
+<Project>
+
+  <!--
+    Synthetix.targets
+    =================
+    This file is bundled inside the Synthetix NuGet package and is imported
+    automatically into every project that references Synthetix.
+
+    It does three jobs:
+
+      1. Decides whether the mapping manifest is on, and whether manifest drift
+         (SYNTX017) should fail the build. These two settings are made visible
+         to the source generator.
+
+      2. Hands the committed manifest files (mapping/*.manifest.json) to the
+         generator as "additional files" so it can compare them against the
+         current mapping and report drift.
+
+      3. Defines the 'SynthetixUpdateManifest' build target. Running
+         `dotnet build -t:SynthetixUpdateManifest` rewrites the human-readable
+         files in the mapping/ folder. A normal build never writes those files.
+  -->
+
+  <!-- ===== 1. Settings ===== -->
+  <PropertyGroup>
+    <!-- The manifest is on by default. Turn it off with:
+         <SynthetixManifest>false</SynthetixManifest> -->
+    <SynthetixManifest Condition="'$(SynthetixManifest)' == ''">true</SynthetixManifest>
+
+    <!-- Manifest drift is only a warning by default. A CI build usually sets
+         <SynthetixTreatDriftAsError>true</SynthetixTreatDriftAsError> so a
+         drifted mapping cannot be merged. -->
+    <SynthetixTreatDriftAsError Condition="'$(SynthetixTreatDriftAsError)' == ''">false</SynthetixTreatDriftAsError>
+
+    <!-- Where the committed manifest files live. Defaults to a 'mapping' folder
+         next to the project file. -->
+    <SynthetixManifestDirectory Condition="'$(SynthetixManifestDirectory)' == ''">$(MSBuildProjectDirectory)\mapping</SynthetixManifestDirectory>
+  </PropertyGroup>
+
+  <!-- Make the two settings readable by the generator. MSBuild exposes each one
+       to the generator as build_property.<Name>. -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="SynthetixManifest" />
+    <CompilerVisibleProperty Include="SynthetixTreatDriftAsError" />
+  </ItemGroup>
+
+  <!-- ===== 2. Feed the committed manifests to the generator ===== -->
+  <!-- Each mapping/*.manifest.json file is added as an AdditionalFile. The
+       generator reads them to detect drift. They are only added when the
+       manifest feature is on and the folder actually exists. -->
+  <ItemGroup Condition="'$(SynthetixManifest)' == 'true' And Exists('$(SynthetixManifestDirectory)')">
+    <AdditionalFiles Include="$(SynthetixManifestDirectory)\*.manifest.json"
+                     SynthetixManifest="true" />
+  </ItemGroup>
+
+  <!-- ===== 3. The SynthetixUpdateManifest target ===== -->
+
+  <!--
+    A small inline MSBuild task. It reads the manifest "carrier" files the
+    generator writes into the obj/ generated-files folder and copies their
+    content out into the mapping/ folder as readable .json and .md files.
+
+    The generator itself never writes to disk. It only adds source files to the
+    compilation. This task is what turns that source into the committed
+    mapping/ files, and it runs only when SynthetixUpdateManifest is invoked.
+  -->
+  <UsingTask TaskName="SynthetixWriteManifest"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <GeneratedFilesRoot ParameterType="System.String" Required="true" />
+      <OutputDirectory ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Class" Language="cs">
+        <![CDATA[
+        using System;
+        using System.IO;
+        using System.Text;
+        using System.Collections.Generic;
+        using Microsoft.Build.Framework;
+        using Microsoft.Build.Utilities;
+
+        // Copies the manifest content out of the generator's "carrier" files.
+        // A carrier file is a generated .cs file that holds the manifest text
+        // as line comments, between BEGIN and END marker lines.
+        public class SynthetixWriteManifest : Task
+        {
+            public string GeneratedFilesRoot { get; set; }
+            public string OutputDirectory { get; set; }
+
+            public override bool Execute()
+            {
+                if (!Directory.Exists(GeneratedFilesRoot))
+                {
+                    Log.LogWarning("Synthetix: no generated files found. Build the project first.");
+                    return true;
+                }
+
+                Directory.CreateDirectory(OutputDirectory);
+                int written = 0;
+
+                // Carrier files are named <Mapper>.Manifest.g.cs.
+                var carriers = Directory.GetFiles(
+                    GeneratedFilesRoot, "*.Manifest.g.cs", SearchOption.AllDirectories);
+
+                foreach (var carrier in carriers)
+                {
+                    foreach (var block in ReadBlocks(File.ReadAllLines(carrier)))
+                    {
+                        string extension = block.Format == "json" ? ".manifest.json" : ".manifest.md";
+                        string path = Path.Combine(OutputDirectory, block.Name + extension);
+                        File.WriteAllText(path, block.Content, new UTF8Encoding(false));
+                        Log.LogMessage(MessageImportance.High, "Synthetix: wrote " + path);
+                        written++;
+                    }
+                }
+
+                Log.LogMessage(MessageImportance.High,
+                    "Synthetix: updated " + written + " manifest file(s) in " + OutputDirectory);
+                return true;
+            }
+
+            // One extracted block of manifest text.
+            private struct Block
+            {
+                public string Name;     // the mapper name
+                public string Format;   // "json" or "md"
+                public string Content;  // the manifest text itself
+            }
+
+            // Walks the lines of a carrier file and yields each BEGIN..END block.
+            private static IEnumerable<Block> ReadBlocks(string[] lines)
+            {
+                const string beginMarker = "//SYNTHETIX-MANIFEST-BEGIN ";
+                const string endMarker = "//SYNTHETIX-MANIFEST-END";
+
+                int i = 0;
+                while (i < lines.Length)
+                {
+                    string line = lines[i];
+                    if (!line.StartsWith(beginMarker, StringComparison.Ordinal))
+                    {
+                        i++;
+                        continue;
+                    }
+
+                    // The BEGIN line looks like: //SYNTHETIX-MANIFEST-BEGIN name=X format=Y
+                    string header = line.Substring(beginMarker.Length);
+                    string name = ReadValue(header, "name=");
+                    string format = ReadValue(header, "format=");
+
+                    // Collect the content lines until the END marker. Every
+                    // content line starts with "//", which we strip off.
+                    var content = new StringBuilder();
+                    i++;
+                    while (i < lines.Length &&
+                           !lines[i].StartsWith(endMarker, StringComparison.Ordinal))
+                    {
+                        string raw = lines[i];
+                        content.Append(raw.Length >= 2 ? raw.Substring(2) : string.Empty);
+                        content.Append('\n');
+                        i++;
+                    }
+                    i++; // step past the END marker
+
+                    yield return new Block { Name = name, Format = format, Content = content.ToString() };
+                }
+            }
+
+            // Reads a "key=value" token out of a space-separated header string.
+            private static string ReadValue(string header, string key)
+            {
+                foreach (string token in header.Split(' '))
+                {
+                    if (token.StartsWith(key, StringComparison.Ordinal))
+                    {
+                        return token.Substring(key.Length).Trim();
+                    }
+                }
+                return string.Empty;
+            }
+        }
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <!--
+    Run with:  dotnet build -t:SynthetixUpdateManifest
+
+    Step 1 builds the project with EmitCompilerGeneratedFiles=true, which tells
+    Roslyn to write every generated file (including the manifest carriers) to
+    disk under obj/.
+    Step 2 extracts the manifest text from those carriers into mapping/.
+  -->
+  <Target Name="SynthetixUpdateManifest">
+    <Message Importance="high" Text="Synthetix: refreshing the mapping manifest..." />
+
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="Build"
+             Properties="EmitCompilerGeneratedFiles=true;SynthetixManifest=true" />
+
+    <SynthetixWriteManifest
+        GeneratedFilesRoot="$(IntermediateOutputPath)generated"
+        OutputDirectory="$(SynthetixManifestDirectory)" />
+  </Target>
+
+</Project>

@@ -1,0 +1,32 @@
+name: CI
+
+# Builds the solution and runs the unit and integration test suites on every
+# push and pull request. The benchmark suite is not run here - it runs on
+# release branches and on a schedule (design doc 12.5).
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up the .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore Synthetix.sln
+
+      - name: Build
+        run: dotnet build Synthetix.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Synthetix.sln --configuration Release --no-build --verbosity normal

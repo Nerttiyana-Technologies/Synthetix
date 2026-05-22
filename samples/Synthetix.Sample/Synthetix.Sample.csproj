@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- A small console app that shows Synthetix in action. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+
+    <!-- Write the generated files to disk (under obj/) so they are easy to open
+         and read. This is also what the manifest update target needs. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Reference the generator as an analyzer, not as a normal library.
+         ReferenceOutputAssembly=false keeps its DLL out of the app's output. -->
+    <ProjectReference Include="..\..\src\Synthetix.Generator\Synthetix.Generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Bring in the manifest MSBuild integration. A real consumer gets this
+       automatically from the NuGet package; the sample uses a project reference,
+       so it imports the targets file directly. -->
+  <Import Project="..\..\src\Synthetix.Generator\build\Synthetix.targets" />
+
+</Project>

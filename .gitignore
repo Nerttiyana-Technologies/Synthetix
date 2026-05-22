@@ -434,6 +434,10 @@ FodyWeavers.xsd
 # JetBrains Rider / IntelliJ IDE settings
 .idea/
 
-# Synthetix design docs — kept local until the source code is generated and tested.
-# Remove this entry to publish the design document.
-/docs/
+# Synthetix design document — kept local, not published to GitHub.
+# Everything else under docs/ (the SYNTX diagnostics pages, the release
+# checklist, the overview presentation) IS published: the diagnostic help
+# links baked into the package point at docs/diagnostics/ on GitHub.
+/docs/Synthetix-Design.md
+/docs/Release-Checklist.md
+/docs/Synthetix-Overview.pptx

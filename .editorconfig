@@ -1,0 +1,45 @@
+# EditorConfig keeps code style consistent across editors and machines.
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.{cs,csx}]
+indent_size = 4
+
+[*.{csproj,props,targets,xml}]
+indent_size = 2
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+# Prefer "var" only when the type is obvious from the right-hand side.
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Always use braces, even for single-line blocks. This avoids a whole class of bugs.
+csharp_prefer_braces = true:warning
+
+# Put each using directive in System order first, then sort the rest alphabetically.
+dotnet_sort_system_directives_first = true
+
+# A namespace per file, written on one line (file-scoped namespaces).
+csharp_style_namespace_declarations = file_scoped:suggestion
+
+# --- Synthetix diagnostic severities ---
+# Consumers of the Synthetix package can copy these lines into their own
+# .editorconfig to change how strict each diagnostic is. The values below are
+# only the defaults documented in the design doc, section 11.
+dotnet_diagnostic.SYNTX004.severity = warning
+dotnet_diagnostic.SYNTX005.severity = silent
+dotnet_diagnostic.SYNTX012.severity = warning
+dotnet_diagnostic.SYNTX017.severity = warning
