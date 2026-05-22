@@ -1,0 +1,116 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Synthetix.Generator is the C# source generator. It is the whole product.
+
+    IMPORTANT: this project targets netstandard2.0, NOT net10.0.
+    A source generator is loaded *inside the C# compiler*, and the compiler runs
+    on the netstandard2.0 surface. Targeting net10.0 here would make the
+    generator fail to load. This is a hard rule, separate from the fact that
+    projects that USE Synthetix target .NET 10.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Synthetix</RootNamespace>
+    <AssemblyName>Synthetix.Generator</AssemblyName>
+
+    <!-- Marks this project as a Roslyn analyzer/generator component. -->
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
+    <!-- Note: IsAotCompatible is intentionally NOT set here. This project
+         targets netstandard2.0, where the SDK's AOT analyzer is not available.
+         Synthetix's AOT safety is a property of the code it GENERATES and of
+         the apps that consume it - not of this generator assembly, which runs
+         inside the compiler and is never AOT-published. -->
+  </PropertyGroup>
+
+  <!-- ===== NuGet package settings (design doc section 10.3) ===== -->
+  <PropertyGroup>
+    <PackageId>Synthetix</PackageId>
+    <Version>0.1.0</Version>
+    <Title>Synthetix</Title>
+    <Description>A compile-time, source-generated object-to-object mapper for .NET. As fast as hand-written code, AOT friendly, with an auditable, drift-checked mapping manifest.</Description>
+    <PackageTags>source-generator;mapper;mapping;object-mapper;aot;roslyn;dto</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>First release of Synthetix: same-name mapping, flattening/unflattening, collection-element mapping, polymorphic dispatch, existing-instance update, string and primitive conversions, IQueryable projection, async mappers, the SYNTX001-SYNTX024 diagnostics catalog, custom member configuration, and the auditable mapping manifest with drift detection.</PackageReleaseNotes>
+
+    <!-- The generator DLL is not an ordinary library, so do not pack it as one.
+         The _AddSynthetixPackageFiles target below packs it by hand into
+         analyzers/dotnet/cs. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
+    <!-- Consumers get PrivateAssets=all automatically, so the package never
+         becomes a runtime dependency of their app. -->
+    <DevelopmentDependency>true</DevelopmentDependency>
+
+    <!-- The generator has no NuGet dependencies of its own to carry along. -->
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+
+    <!-- "Step into the generated code" is a core promise, so ship symbols and
+         SourceLink data and build deterministically. -->
+<!--    <IncludeSymbols>true</IncludeSymbols>-->
+<!--    <SymbolPackageFormat>snupkg</SymbolPackageFormat>-->
+    <DebugType>portable</DebugType>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+    <!-- Every file in the package is added by the _AddSynthetixPackageFiles
+         target. It must be a target, not a csproj-body <None> item: the target
+         framework is appended to $(OutputPath) only later, by an imported
+         .targets file, so a body item would point at the wrong DLL path. -->
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddSynthetixPackageFiles</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Roslyn. We reference the LOWEST version that has the APIs we use
+         (ForAttributeWithMetadataName, since Roslyn 4.4.0). A low baseline lets
+         the generator load in the widest range of IDEs and SDKs. Partial-
+         property detection uses the version-independent syntax model, so no
+         newer Roslyn API is needed - one generator build serves every compiler.
+         PrivateAssets=all: the compiler host already provides Roslyn, so we
+         must not pack it or push it onto consumers. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" PrivateAssets="all" />
+
+    <!-- Validates the analyzer-release tracking files below at build time. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
+
+    <!-- Lets a developer debug into Synthetix's own source, not just its output. -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- The diagnostics-release tracking files. Roslyn checks every SYNTX#### id
+       is listed here, so we cannot ship an undocumented diagnostic by accident. -->
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <!-- ===== What actually goes into the .nupkg ===== -->
+  <Target Name="_AddSynthetixPackageFiles">
+    <ItemGroup>
+      <!-- The generator assembly. analyzers/dotnet/cs is the folder the compiler
+           looks in for C# analyzers and generators. -->
+      <TfmSpecificPackageFile Include="$(TargetPath)"
+                              PackagePath="analyzers/dotnet/cs/" />
+      <!-- Portable PDB with SourceLink data, packed beside the analyzer DLL. -->
+      <TfmSpecificPackageFile Include="$(TargetDir)Synthetix.Generator.pdb"
+                              PackagePath="analyzers/dotnet/cs/" />
+
+      <!-- The MSBuild integration. build/ reaches direct consumers;
+           buildTransitive/ reaches consumers that get the package indirectly. -->
+      <TfmSpecificPackageFile Include="$(MSBuildProjectDirectory)/build/Synthetix.targets"
+                              PackagePath="build/" />
+      <TfmSpecificPackageFile Include="$(MSBuildProjectDirectory)/build/Synthetix.targets"
+                              PackagePath="buildTransitive/" />
+
+      <!-- README (the NuGet landing page) and the package icon. -->
+      <TfmSpecificPackageFile Include="$(MSBuildProjectDirectory)/../../README.md"
+                              PackagePath="" />
+      <TfmSpecificPackageFile Include="$(MSBuildProjectDirectory)/icon.png"
+                              PackagePath="" />
+    </ItemGroup>
+  </Target>
+
+</Project>

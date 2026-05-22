@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Synthetix.Abstractions is the OPTIONAL, alternative way to get the Synthetix
+    attributes (design doc 10.2).
+
+    The recommended model injects the attributes as internal source, so a normal
+    build never needs this project. It exists only so a team that wants to
+    reference the attribute types as a real, shared, public assembly can do so
+    without the solution having to be restructured.
+
+    Because it is off by default, it is not packed by a normal build.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Synthetix</RootNamespace>
+    <AssemblyName>Synthetix.Abstractions</AssemblyName>
+
+    <!-- IsAotCompatible is not set: netstandard2.0 has no AOT analyzer. The
+         attribute types reference nothing at runtime, so they are AOT safe by
+         nature wherever they are consumed. -->
+
+    <!-- Not produced by a normal build; the injected-source model is preferred. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,36 @@
+<Project>
+
+  <!--
+    Directory.Build.props is picked up automatically by MSBuild for every project
+    in this folder and below. It is the one place to keep settings that all the
+    Synthetix projects share, so each individual .csproj stays short.
+  -->
+
+  <PropertyGroup>
+    <!-- Use the newest C# language features the SDK supports. -->
+    <LangVersion>latest</LangVersion>
+
+    <!-- Turn on nullable reference types everywhere so null bugs show up at build time. -->
+    <Nullable>enable</Nullable>
+
+    <!-- Make builds reproducible: the same source always produces the same binary. -->
+    <Deterministic>true</Deterministic>
+
+    <!-- Treat compiler warnings seriously, but do not fail the build on them locally. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Shared package metadata. Only the packable projects actually produce a NuGet package. -->
+  <PropertyGroup>
+    <Authors>Suresh Subramanian</Authors>
+    <Company>Synthetix</Company>
+    <Product>Synthetix</Product>
+    <Copyright>Copyright (c) 2026 Suresh Subramanian</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/isureshsubramanian/Synthetix</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/isureshsubramanian/Synthetix</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+</Project>
