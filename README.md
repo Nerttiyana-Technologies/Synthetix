@@ -1,4 +1,9 @@
-# Synthetix
+
+<div align="center">
+
+<img src="header.png" alt=", source-generated object-to-object mapper for .NET" />
+
+</div>
 
 **A compile-time, source-generated object-to-object mapper for .NET — as fast as
 hand-written code, with mappings that are auditable and drift-checked.**
@@ -13,10 +18,7 @@ runtime reflection, no expression-tree compilation, and no startup warm-up**. Th
 generated code is real C# you can set a breakpoint inside, and it works under
 Native AOT and assembly trimming with nothing extra to configure.
 
-Synthetix is not here to replace the good tools that already exist —
-[Mapperly](https://github.com/riok/mapperly) and
-[AutoMapper](https://github.com/AutoMapper/AutoMapper) are mature and well
-designed. Synthetix focuses its effort on one thing those tools leave largely
+Synthetix focuses its effort on one thing those tools leave largely
 untouched: making the mapping itself something you can **see, review, and
 trust** — see the mapping manifest below.
 
