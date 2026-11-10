@@ -32,7 +32,7 @@
     <Company>Synthetix</Company>
     <Product>Synthetix</Product>
     <Copyright>Copyright (c) 2026 Suresh Subramanian</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/isureshsubramanian/Synthetix</PackageProjectUrl>
     <RepositoryUrl>https://github.com/isureshsubramanian/Synthetix</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
