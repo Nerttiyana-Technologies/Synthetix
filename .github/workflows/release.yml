@@ -60,9 +60,15 @@ jobs:
     runs-on: ubuntu-latest
     # The 'nuget-publish' environment gates the publish behind manual
     # approval. Create it in repo Settings > Environments and add yourself
-    # as a required reviewer. To publish automatically with no approval
-    # gate, remove the 'environment:' line below.
+    # as a required reviewer. The same environment name must be entered in
+    # the Trusted Publishing policy on nuget.org.
     environment: nuget-publish
+    # Trusted Publishing: the job asks GitHub for a short-lived identity
+    # token, which nuget.org exchanges for a temporary API key. No stored
+    # NuGet API key is needed.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Download packages
         uses: actions/download-artifact@v5
@@ -75,10 +81,18 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # Exchange the GitHub identity token for a temporary NuGet API key.
+      # NUGET_USER is the nuget.org profile name (not the e-mail address).
+      - name: NuGet login (Trusted Publishing)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Push packages to NuGet.org
         run: |
           dotnet nuget push "./artifacts/*.nupkg" \
-            --api-key "${{ secrets.NUGET_API_KEY }}" \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
         # --skip-duplicate: if a version is already published, skip it
